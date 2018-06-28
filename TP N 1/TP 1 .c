@@ -218,6 +218,8 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
 	strcpy(palReser[12],"long");
 	strcpy(palReser[13],"void");
 	strcpy(palReser[14],"unsigned");
+	strcpy(palReser[15],"include");
+	
 	
 	char operadores[20][20];
 	strcpy(operadores[0],"=");
@@ -239,6 +241,8 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
 	strcpy(operadores[16],"--");
 	strcpy(operadores[17],"[");
 	strcpy(operadores[18],"]");
+	strcpy(operadores[19],".");
+	
 	
 	char ch, buffer[100],bufferOper[2];
     FILE *fp;
