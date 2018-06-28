@@ -257,7 +257,7 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
     while((ch = fgetc(fp)) != EOF){
     		if(ch=='\n')
     			linea++;
-           
+          
            //es un numero o una letra
            if(esNumOLet(ch)){
                buffer[j] = ch;
@@ -265,7 +265,7 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
            }
            else if((!esNumOLet(ch)) && (j != 0)){
                    buffer[j] = '\0';
-                   j = 0;         
+                   j = 0;    
                    if(esPalabraReservada(buffer,palReser)){
                        agregarTabla(frente,fin,buffer,"palabraReservada",linea);
 				   }
