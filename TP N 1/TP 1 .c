@@ -68,6 +68,7 @@ int esPalabraReservada(char palabra[],char palReser[][30]){
 	return 0;
 }
 
+//funciones de validacion
 int esOperador(char operador[],char operadores[][20]){
 	int i;
 	for(i=0;i<20;i++){
@@ -162,6 +163,8 @@ int errorIdentificador(char identificador[]){
 	return 0;
 }
 
+
+//funciones para los vectores de funcion y variables
 void agregarIdentificador(char nuevo[],char identificadores[][100]){
 	int i;
 	for(i=0;i<20;i++){
@@ -193,9 +196,11 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
 	char funciones[20][100];
 	inicializar(variables);
 	inicializar(funciones);
-	char carPun[9]={"{};(),"};
+	
 	FILE *fnuevo=fopen(archivo,"rt");
 	int flag=0;
+	
+	char carPun[9]={"{};(),"};
 	
 	char palReser[20][30];
 	strcpy(palReser[0],"int");
@@ -245,7 +250,6 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
         printf("error al abrir el archivo\n");
     }
     
-    //va 
     while((ch = fgetc(fp)) != EOF){
     		if(ch=='\n')
     			linea++;
