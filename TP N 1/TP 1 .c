@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h> 
 
-/* run this program using the console pauser or add your own getch, system("pause") or input loop */
 //argc cantidad de parametros 
 //argv vector de parametros
 
@@ -12,7 +11,6 @@ typedef struct tablaTokens{
 	int linea;
 	struct tablaTokens *sgte;
 }tablaTokens;
-
 
 void agregarTabla(struct tablaTokens **frente, struct tablaTokens **fin, char valLexema[], char valToken[], int valLinea){
 	struct tablaTokens *q =  malloc (sizeof(struct tablaTokens));
@@ -164,12 +162,38 @@ int errorIdentificador(char identificador[]){
 	return 0;
 }
 
+void agregarIdentificador(char nuevo[],char identificadores[][100]){
+	int i;
+	for(i=0;i<20;i++){
+		if(identificadores[i][0]==' ')
+			strcpy(identificadores[i],nuevo);
+	}
+}
+
+int esViejoIden(char viejo[],char identificadores[][100]){
+	int i;
+	for(i=0;i<20;i++){
+		if(!strcmp(viejo,identificadores[i]))
+			return 1;
+	}
+	return 0;
+}
+
+int inicializar(char identificadores[][100]){
+	int i;
+	for(i=0;i<20;i++){
+		identificadores[i][0]=' ';
+	}
+}
+
 //leer txt
 void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin){
 
 	char variables[20][100];
 	char funciones[20][100];
-	char carPun[9]={"{};(),[]"};
+	inicializar(variables);
+	inicializar(funciones);
+	char carPun[9]={"{};(),"};
 	FILE *fnuevo=fopen(archivo,"rt");
 	int flag=0;
 	
@@ -208,8 +232,10 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
 	strcpy(operadores[14],"||");
 	strcpy(operadores[15],"++");
 	strcpy(operadores[16],"--");
-
-	char ch, buffer[15],bufferOper[2];
+	strcpy(operadores[17],"[");
+	strcpy(operadores[18],"]");
+	
+	char ch, buffer[100],bufferOper[2];
     FILE *fp;
     int i=0,j=0;
     int linea=1;
@@ -219,6 +245,7 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
         printf("error al abrir el archivo\n");
     }
     
+    //va 
     while((ch = fgetc(fp)) != EOF){
     		if(ch=='\n')
     			linea++;
@@ -230,49 +257,59 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
            }
            else if((!esNumOLet(ch)) && (j != 0)){
                    buffer[j] = '\0';
-                   j = 0;
-                                      
+                   j = 0;         
                    if(esPalabraReservada(buffer,palReser)){
-                       //printf("%s es palabra reservada\n", buffer);
                        agregarTabla(frente,fin,buffer,"palabraReservada",linea);
 				   }
                    else{
                    		if(constanteHexa(buffer)){
-                   			//printf("%s es una constante Hexadecimal\n", buffer);
                    			agregarTabla(frente,fin,buffer,"constanteHexadecimal",linea);
 						}
-						if(constanteOctal(buffer)){
-							//printf("%s es una constante Octal\n", buffer);
+						else if(constanteOctal(buffer)){
 							agregarTabla(frente,fin,buffer,"constanteOctal",linea);
 						}
-						if(constanteDecimal(buffer)){
-							//printf("%s es una Constante Decimal\n", buffer);
+						else if(constanteDecimal(buffer)){
 							agregarTabla(frente,fin,buffer,"constanteDecimal",linea);
 						}
-						if(!constanteHexa(buffer)&&!constanteOctal(buffer)&&!constanteDecimal(buffer)){
+						else{
 							if(errorIdentificador(buffer)){
-	                   			//printf("%s es un error\n", buffer);
 	                   			agregarTabla(frente,fin,buffer,"errorIdentificador",linea);
 							}
 							else{
-								flag=0;
-	                       		fseek(fnuevo,ftell(fp)-sizeof(ch),SEEK_SET);
-	                       		while((ch = fgetc(fnuevo)) != EOF&&(flag==0)){
-	                       				if(esPrimerOper(ch)||ch==','||ch==';'||ch==')') {
-	                       					agregarTabla(frente,fin,buffer,"identificador	",linea);
-	                       					flag=1;
-										   }
-	                       					
-	                       				if(ch=='('){
-	                       					agregarTabla(frente,fin,buffer,"identificadorFuncion",linea);
-	                       					flag =1;
-										   }
-									
+								if(esViejoIden(buffer,variables)){
+									agregarTabla(frente,fin,buffer,"identificador	",linea);
 								}
-								fseek(fp,ftell(fp)-sizeof(ch),SEEK_SET);
+								else if(esViejoIden(buffer,funciones)){
+									agregarTabla(frente,fin,buffer,"identificadorFuncion",linea);
+								}
+								else{
+									flag=0;
+		                       		fseek(fnuevo,ftell(fp)-sizeof(ch),SEEK_SET);
+		                       		while((ch = fgetc(fnuevo)) != EOF&&(flag==0)){
+		                       				if(esPrimerOper(ch)||ch==','||ch==';'||ch==')') {
+		                       					agregarTabla(frente,fin,buffer,"identificador	",linea);
+		                       					agregarIdentificador(buffer,variables);
+		                       					flag=1;
+											}
+		                       					
+		                       				if(ch=='('){
+		                       					agregarTabla(frente,fin,buffer,"identificadorFuncion",linea);
+		                       					agregarIdentificador(buffer,funciones);
+		                       					flag =1;
+											}
+										
+									}
+									if(ch==EOF)
+		                       			agregarTabla(frente,fin,buffer,"errorIdentificador",linea);
+		                       					
+										
+									fseek(fp,ftell(fp)-sizeof(ch),SEEK_SET);
+								}
+								
 							}
 						}
 				   }
+				   strcpy(buffer," ");
            }
            
            if(esPrimerOper(ch)){
@@ -284,18 +321,93 @@ void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin
                 i = 0;
                 
                 if(esOperador(bufferOper,operadores)){
-                	//printf("%s es Operador\n", bufferOper);
+                	
                 	agregarTabla(frente,fin,bufferOper,"Operador	",linea);
 				}
+				strcpy(bufferOper," ");
 		   }	
            	
            if(esCaracterPuntuacion(ch,carPun)){
 		   		agregarTablaChar(frente,fin,ch,"caracterPuntuacion",linea);
 		   }
 		   
-		   
     }
-    
+    //es un numero o una letra
+           if(esNumOLet(ch)){
+               buffer[j] = ch;
+               j++;
+           }
+           else if((!esNumOLet(ch)) && (j != 0)){
+                   buffer[j] = '\0';
+                   j = 0;         
+                   if(esPalabraReservada(buffer,palReser)){
+                       agregarTabla(frente,fin,buffer,"palabraReservada",linea);
+				   }
+                   else{
+                   		if(constanteHexa(buffer)){
+                   			agregarTabla(frente,fin,buffer,"constanteHexadecimal",linea);
+						}
+						else if(constanteOctal(buffer)){
+							agregarTabla(frente,fin,buffer,"constanteOctal",linea);
+						}
+						else if(constanteDecimal(buffer)){
+							agregarTabla(frente,fin,buffer,"constanteDecimal",linea);
+						}
+						else{
+							if(errorIdentificador(buffer)){
+	                   			agregarTabla(frente,fin,buffer,"errorIdentificador",linea);
+							}
+							else{
+								if(esViejoIden(buffer,variables)){
+									agregarTabla(frente,fin,buffer,"identificador	",linea);
+								}
+								else if(esViejoIden(buffer,funciones)){
+									agregarTabla(frente,fin,buffer,"identificadorFuncion",linea);
+								}
+								else{
+									flag=0;
+		                       		fseek(fnuevo,ftell(fp)-sizeof(ch),SEEK_SET);
+		                       		while((ch = fgetc(fnuevo)) != EOF&&(flag==0)){
+		                       				if(esPrimerOper(ch)||ch==','||ch==';'||ch==')') {
+		                       					agregarTabla(frente,fin,buffer,"identificador	",linea);
+		                       					agregarIdentificador(buffer,variables);
+		                       					flag=1;
+											}
+		                       					
+		                       				if(ch=='('){
+		                       					agregarTabla(frente,fin,buffer,"identificadorFuncion",linea);
+		                       					agregarIdentificador(buffer,funciones);
+		                       					flag =1;
+											}
+										
+									}
+									if(ch==EOF)
+		                       			agregarTabla(frente,fin,buffer,"errorIdentificador",linea);
+		                       					
+										
+									fseek(fp,ftell(fp)-sizeof(ch),SEEK_SET);
+								}
+								
+							}
+						}
+				   }
+				   strcpy(buffer," ");
+           }
+           
+           if(esPrimerOper(ch)){
+           		bufferOper[i]=ch;
+           		i++;
+		   }
+           else if((!esPrimerOper(ch) )&& (i != 0)){
+           		bufferOper[i] = '\0';
+                i = 0;
+                
+                if(esOperador(bufferOper,operadores)){
+                	
+                	agregarTabla(frente,fin,bufferOper,"Operador	",linea);
+				}
+				strcpy(bufferOper," ");
+		   }
     fclose(fp);
     
 
@@ -343,10 +455,6 @@ int main(int argc, char *argv[]) {
 	
 	struct tablaTokens *frente = NULL;
 	struct tablaTokens *fin = NULL;
-	
-	//van en leer
-	char variables[20][100];
-	char funciones[20][100];
 	
 	
 	///////////////leer txt///////////////////////////////
