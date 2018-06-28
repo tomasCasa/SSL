@@ -1,0 +1,26 @@
+Lexema	|Token	|Linea	
+-------------------------------------------------------
+int	|palabraReservada	|1
+un_subprog	|identificador		|1
+(	|caracterPuntuacion	|1
+int	|palabraReservada	|1
+x	|identificador		|1
+,	|caracterPuntuacion	|1
+int	|palabraReservada	|1
+y	|identificador		|1
+)	|caracterPuntuacion	|1
+{	|caracterPuntuacion	|2
+if	|palabraReservada	|3
+(	|caracterPuntuacion	|3
+x	|identificador		|3
+>	|Operador		|3
+y	|identificador		|3
+)	|caracterPuntuacion	|3
+return	|palabraReservada	|4
+x	|identificador		|4
+;	|caracterPuntuacion	|4
+else	|palabraReservada	|6
+return	|palabraReservada	|6
+y	|identificador		|6
+;	|caracterPuntuacion	|6
+}	|caracterPuntuacion	|7

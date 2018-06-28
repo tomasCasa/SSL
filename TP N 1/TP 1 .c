@@ -27,6 +27,21 @@ void agregarTabla(struct tablaTokens **frente, struct tablaTokens **fin, char va
 	*fin = q;
 }
 
+void agregarTablaChar(struct tablaTokens **frente, struct tablaTokens **fin, char valLexema, char valToken[], int valLinea){
+	struct tablaTokens *q =  malloc (sizeof(struct tablaTokens));
+	char lex[100] = " ";
+	lex[0]=valLexema;
+	strcpy(q->lexema, lex);
+	strcpy(q->token, valToken);
+	q->linea = valLinea;
+	q->sgte = NULL;
+	if(*frente == NULL)
+		*frente = q;
+	else
+		(*fin)->sgte = q;
+	*fin = q;
+}
+
 struct tablaTokens suprimirTabla (struct tablaTokens **frente,struct tablaTokens **fin){
 	struct tablaTokens valor;
 	struct tablaTokens *q = *frente;
@@ -45,8 +60,6 @@ struct tablaTokens suprimirTabla (struct tablaTokens **frente,struct tablaTokens
 	return valor;
 }
 
-
-//funciones de verificacion
 int esPalabraReservada(char palabra[],char palReser[][30]){
 	int i;
 	for(i=0;i<20;i++){
@@ -67,10 +80,10 @@ int esOperador(char operador[],char operadores[][20]){
 	return 0;
 }
 
-int esCaracterPuntuacion(char caracter[], char caracteresPuntuacion[][1]){
+int esCaracterPuntuacion(char caracter, char carPun[]){
 	int i;
-	for(i=0;i<20;i++){
-		if(!strcmp(caracter,caracteresPuntuacion[i])){
+	for(i=0;i<9;++i){
+		if(caracter==carPun[i]){
 			return 1;
 		}
 	}
@@ -78,15 +91,27 @@ int esCaracterPuntuacion(char caracter[], char caracteresPuntuacion[][1]){
 }
 
 int constanteDecimal(char constante[]){
-	if(constante[0]!=48)
-		return 1;
+	if(constante[0]=='0')
+		return 0;
+
+	int i;
+	for(i=0;constante[i]!='\0';i++){
+		if(constante[i]<'0'||constante[i]>'9')
+			return 0;
+	}
 	
-	return 0;
+	return 1;
 }
 
 int constanteOctal(char constante[]){
-	if(constante[0]==48){
-		if(constante[1]!=120||constante[1]!=88){
+	int i;
+	if(constante[0]=='0'){
+		if(constante[1]!='x'&&constante[1]!='X'){
+			for(i=1;constante[i]!='\0';i++){
+				if(constante[i]<'0'||constante[i]>'7'){
+					return 0;
+				}
+			}
 			return 1;
 		}
 	}
@@ -94,25 +119,46 @@ int constanteOctal(char constante[]){
 }
 
 int constanteHexa(char constante[]){
-	if(constante[0]==48){
-		if(constante[1]==120||constante[1]==88){
+	int i;
+	if(constante[2]=='\0'){
+		return 0;
+	}
+	if(constante[0]=='0'){
+		if(constante[1]=='x'||constante[1]=='X'){
+			for(i=2;constante[i]!='\0';i++){
+				if((constante[i]<'0'||constante[i]>'9')&&(constante[i]<'a'||constante[i]>'f')&&(constante[i]<'A'||constante[i]>'F')){
+					return 0;
+				}
+			}
 			return 1;
+		}
+		else{
+			
 		}
 	}
 	return 0;
 }
 
-//es identificador de variable o funcion
+int esNumOLet(char ch){
+	return ( ('0' <= ch && ch <= '9')||('A'<= ch && ch <='Z')||('a'<=ch && ch<='z')||ch=='_'||ch=='ñ'||ch=='Ñ');
+}
 
-//errores de identificador
+int esPrimerOper(char ch){
+	return (ch=='='||ch=='<'||ch=='>'||ch=='!'||ch=='+'||ch=='-'||ch=='&'||ch=='|'||ch=='*'||ch=='/'||ch=='%');
+}
+
 int errorIdentificador(char identificador[]){
-	if(identificador[0]>=48 && identificador[0]<=57)
+	if('0' <= identificador[0] && identificador[0] <= '9' )
 		return 1;
 	
-	if(!strcmp("ñ",strstr(identificador,"ñ")));
-		return 1;
-		
-	if(identificador[0]==59)
+	//ver si una cadena tiene ñ
+	int i;
+	for(i=0;identificador[i]!='\0';i++){
+		if(identificador[i]=='Ñ' || identificador[i]=='ñ')
+			return 1;
+	}
+	
+	if(identificador[0]==';')
 		return 1;
 			
 	return 0;
@@ -120,22 +166,139 @@ int errorIdentificador(char identificador[]){
 
 //leer txt
 void leerTxt(char archivo[],struct tablaTokens **frente,struct tablaTokens **fin){
-	FILE *fpuntero;
-	char c;
-	fpuntero = fopen(archivo, "rt+");
-	
-	if(fpuntero == NULL) {
-			perror("Error al intentar abrir el archivo");
-	}
 
-	do{
-		c=getc(fpuntero);
-		if(c!=' ' && c!='\n')
-		 printf( "%c\n",c);
-		 
-	}while(c != EOF);
+	char variables[20][100];
+	char funciones[20][100];
+	char carPun[9]={"{};(),[]"};
+	FILE *fnuevo=fopen(archivo,"rt");
+	int flag=0;
 	
-	fclose(fpuntero);
+	char palReser[20][30];
+	strcpy(palReser[0],"int");
+	strcpy(palReser[1],"char");
+	strcpy(palReser[2],"else");
+	strcpy(palReser[3],"return");
+	strcpy(palReser[4],"if");
+	strcpy(palReser[5],"while");
+	strcpy(palReser[6],"for");
+	strcpy(palReser[7],"struct");
+	strcpy(palReser[8],"break");
+	strcpy(palReser[9],"case");
+	strcpy(palReser[10],"do");
+	strcpy(palReser[11],"double");
+	strcpy(palReser[12],"long");
+	strcpy(palReser[13],"void");
+	strcpy(palReser[14],"unsigned");
+	
+	char operadores[20][20];
+	strcpy(operadores[0],"=");
+	strcpy(operadores[1],"<");
+	strcpy(operadores[2],">");
+	strcpy(operadores[3],"<=");
+	strcpy(operadores[4],">=");
+	strcpy(operadores[5],"==");
+	strcpy(operadores[6],"!=");
+	strcpy(operadores[7],"+");
+	strcpy(operadores[8],"-");
+	strcpy(operadores[9],"*");
+	strcpy(operadores[10],"/");
+	strcpy(operadores[11],"%");
+	strcpy(operadores[12],"&&");
+	strcpy(operadores[13],"!");
+	strcpy(operadores[14],"||");
+	strcpy(operadores[15],"++");
+	strcpy(operadores[16],"--");
+
+	char ch, buffer[15],bufferOper[2];
+    FILE *fp;
+    int i=0,j=0;
+    int linea=1;
+    fp = fopen(archivo,"rt");
+    
+    if(fp == NULL){
+        printf("error al abrir el archivo\n");
+    }
+    
+    while((ch = fgetc(fp)) != EOF){
+    		if(ch=='\n')
+    			linea++;
+           
+           //es un numero o una letra
+           if(esNumOLet(ch)){
+               buffer[j] = ch;
+               j++;
+           }
+           else if((!esNumOLet(ch)) && (j != 0)){
+                   buffer[j] = '\0';
+                   j = 0;
+                                      
+                   if(esPalabraReservada(buffer,palReser)){
+                       //printf("%s es palabra reservada\n", buffer);
+                       agregarTabla(frente,fin,buffer,"palabraReservada",linea);
+				   }
+                   else{
+                   		if(constanteHexa(buffer)){
+                   			//printf("%s es una constante Hexadecimal\n", buffer);
+                   			agregarTabla(frente,fin,buffer,"constanteHexadecimal",linea);
+						}
+						if(constanteOctal(buffer)){
+							//printf("%s es una constante Octal\n", buffer);
+							agregarTabla(frente,fin,buffer,"constanteOctal",linea);
+						}
+						if(constanteDecimal(buffer)){
+							//printf("%s es una Constante Decimal\n", buffer);
+							agregarTabla(frente,fin,buffer,"constanteDecimal",linea);
+						}
+						if(!constanteHexa(buffer)&&!constanteOctal(buffer)&&!constanteDecimal(buffer)){
+							if(errorIdentificador(buffer)){
+	                   			//printf("%s es un error\n", buffer);
+	                   			agregarTabla(frente,fin,buffer,"errorIdentificador",linea);
+							}
+							else{
+								flag=0;
+	                       		fseek(fnuevo,ftell(fp)-sizeof(ch),SEEK_SET);
+	                       		while((ch = fgetc(fnuevo)) != EOF&&(flag==0)){
+	                       				if(esPrimerOper(ch)||ch==','||ch==';'||ch==')') {
+	                       					agregarTabla(frente,fin,buffer,"identificador	",linea);
+	                       					flag=1;
+										   }
+	                       					
+	                       				if(ch=='('){
+	                       					agregarTabla(frente,fin,buffer,"identificadorFuncion",linea);
+	                       					flag =1;
+										   }
+									
+								}
+								fseek(fp,ftell(fp)-sizeof(ch),SEEK_SET);
+							}
+						}
+				   }
+           }
+           
+           if(esPrimerOper(ch)){
+           		bufferOper[i]=ch;
+           		i++;
+		   }
+           else if((!esPrimerOper(ch) )&& (i != 0)){
+           		bufferOper[i] = '\0';
+                i = 0;
+                
+                if(esOperador(bufferOper,operadores)){
+                	//printf("%s es Operador\n", bufferOper);
+                	agregarTabla(frente,fin,bufferOper,"Operador	",linea);
+				}
+		   }	
+           	
+           if(esCaracterPuntuacion(ch,carPun)){
+		   		agregarTablaChar(frente,fin,ch,"caracterPuntuacion",linea);
+		   }
+		   
+		   
+    }
+    
+    fclose(fp);
+    
+
 }
 
 //guardar tabla en txt
@@ -177,64 +340,17 @@ void guardarTabla(struct tablaTokens *frente,struct tablaTokens *fin,char archiv
 }
 
 int main(int argc, char *argv[]) {
-	/*
+	
 	struct tablaTokens *frente = NULL;
 	struct tablaTokens *fin = NULL;
 	
-	//definir la cantidad de palabras,operadores y caracteres///////////////////////////
-	char palReser[20][30];
-	strcpy(palReser[0],"int");
-	strcpy(palReser[1],"char");
-	strcpy(palReser[2],"else");
-	strcpy(palReser[3],"return");
-	strcpy(palReser[4],"if");
-	strcpy(palReser[5],"while");
-	strcpy(palReser[6],"for");
-	strcpy(palReser[7],"struct");
-	strcpy(palReser[8],"break");
-	strcpy(palReser[9],"case");
-	strcpy(palReser[10],"do");
-	strcpy(palReser[11],"double");
-	strcpy(palReser[12],"long");
-	strcpy(palReser[13],"void");
-	strcpy(palReser[14],"unsigned");
-	
-	char operadores[20][20];
-	strcpy(operadores[0],"=");
-	strcpy(operadores[1],"<");
-	strcpy(operadores[2],">");
-	strcpy(operadores[3],"<=");
-	strcpy(operadores[4],">=");
-	strcpy(operadores[5],"==");
-	strcpy(operadores[6],"!=");
-	strcpy(operadores[7],"+");
-	strcpy(operadores[8],"-");
-	strcpy(operadores[9],"*");
-	strcpy(operadores[10],"/");
-	strcpy(operadores[11],"%");
-	strcpy(operadores[12],"&&");
-	strcpy(operadores[13],"!");
-	strcpy(operadores[14],"||");
-	strcpy(operadores[15],"++");
-	strcpy(operadores[16],"--");
-	
-	char caracterPuntuacion[10][1];
-	strcpy(caracterPuntuacion[0],"{");
-	strcpy(caracterPuntuacion[1],"}");
-	strcpy(caracterPuntuacion[2],";");
-	strcpy(caracterPuntuacion[3],"(");
-	strcpy(caracterPuntuacion[4],")");
-	strcpy(caracterPuntuacion[5],",");
-	strcpy(caracterPuntuacion[6],"[");
-	strcpy(caracterPuntuacion[7],"]");
-	
+	//van en leer
 	char variables[20][100];
 	char funciones[20][100];
 	
 	
 	///////////////leer txt///////////////////////////////
 	
-	//strcpy(argv[1],"prueba.txt");
 	
 	leerTxt(argv[1],&frente,&fin);
 	
@@ -276,7 +392,5 @@ int main(int argc, char *argv[]) {
 		guardarTabla(frente,fin,argv[2]);
 	}
 	
-	return 0;*/
-	
-	printf("%s",argv[1]);
+	return 0;
 }
